@@ -14,6 +14,11 @@ builder.Services.AddDbContext<StoreContext>(opt => {
     opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+// this repository registration is different from above 
+// because Type is not defined yet
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+// need to tell it where our mapping profile classes are
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
 
@@ -26,7 +31,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // app.UseHttpsRedirection();
-
+app.UseStaticFiles();
 app.UseAuthorization();
 
 app.MapControllers();
