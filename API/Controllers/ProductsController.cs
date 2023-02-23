@@ -1,4 +1,5 @@
 using API.Dtos;
+using API.Errors;
 using AutoMapper;
 using Core.Entities;
 using Core.Interfaces;
@@ -9,12 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ProductsController : ControllerBase
+    public class ProductsController : BaseApiController
     {
         // these are dependency injection
-        private readonly ILogger<ProductsController> _logger;
         private readonly IGenericRepository<Product> _productContext;
         private readonly IGenericRepository<ProductBrand> _productBrandContext;
         private readonly IGenericRepository<ProductType> _productTypeContext;
@@ -23,13 +21,11 @@ namespace API.Controllers
         // private readonly IProductRepository _productContext;
 
         public ProductsController(
-            ILogger<ProductsController> logger, 
             IGenericRepository<Product> productContext, 
             IGenericRepository<ProductBrand> productBrandContext,
             IGenericRepository<ProductType> productTypeContext,
             IMapper mapper)
         {
-            _logger = logger;
             _productContext = productContext;
             _productBrandContext = productBrandContext;
             _productTypeContext = productTypeContext;
@@ -48,10 +44,15 @@ namespace API.Controllers
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ProductDto>> GetProduct(int id)
         {
             var spec = new ProductsWithTypesAndBrandsSpecification(id);
             var product = await _productContext.GetEntityWithSpec(spec);
+
+            if (product == null)
+                return NotFound(new ApiResponse(404));
 
             return _mapper.Map<Product, ProductDto>(product);
         }
@@ -63,11 +64,18 @@ namespace API.Controllers
         }
 
         [HttpGet("ProductBrands/{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ProductBrand>> GetProductBrand(int id)
         {
-            return await _productBrandContext.GetByIdAsync(id);
-        }
+            var brand = await _productBrandContext.GetByIdAsync(id);
 
+            if (brand == null)
+                return NotFound(new ApiResponse(404));
+            
+            return brand;
+        }
+ 
         [HttpGet("ProductTypes")]
         public async Task<ActionResult<List<ProductType>>> GetProductTypes()
         {
@@ -75,9 +83,16 @@ namespace API.Controllers
         }
 
         [HttpGet("ProductTypes/{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)] // this helps us return data in different format
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)] // in this case, return in our ApiResponse format
         public async Task<ActionResult<ProductType>> GetProductType(int id)
         {
-            return await _productTypeContext.GetByIdAsync(id);
+            var type = await _productTypeContext.GetByIdAsync(id);
+
+            if (type == null)
+                return NotFound(new ApiResponse(404));
+            
+            return type;
         }
     }
 }

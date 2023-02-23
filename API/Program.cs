@@ -1,29 +1,23 @@
-using Core.Interfaces;
+using API.Extensions;
+using API.Middleware;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<StoreContext>(opt => {
-    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-// this repository registration is different from above 
-// because Type is not defined yet
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-// need to tell it where our mapping profile classes are
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
+// Our extension that contains all the serives for the application
+builder.Services.AddApplicationServices(builder.Configuration);
 var app = builder.Build();
 
 // Add Middlewear
 // Configure the HTTP request pipeline.
+
+app.UseMiddleware<ExceptionMiddleware>();
+// this helps with Error Controller
+app.UseStatusCodePagesWithReExecute("/errors/{0}"); 
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
